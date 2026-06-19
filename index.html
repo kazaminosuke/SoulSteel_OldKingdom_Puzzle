@@ -3,205 +3,289 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>古王国パズル記録ツール v15</title>
+<meta name="theme-color" content="#1e1e24">
+<title>古王国パズル記録ツール</title>
 <style>
-    body { font-family: sans-serif; padding: 15px; max-width: 1100px; margin: 0 auto; background-color: #2c2c2c; color: #fff; }
-    h1 { font-size: 20px; text-align: center; color: #e0e0e0; margin-bottom: 20px; }
-    .main-container { display: flex; flex-wrap: wrap; gap: 25px; justify-content: center; align-items: flex-start; }
-    
-    .control-panel { background: #3d3d3d; padding: 20px; border-radius: 8px; flex: 1; min-width: 320px; box-sizing: border-box; }
-    .input-row { display: flex; gap: 10px; margin-bottom: 15px; }
-    .input-group { flex: 1; }
-    label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #ffcc80; }
-    input[type="date"], select { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; border-radius: 5px; border: 1px solid #555; background: #eee; color: #000; font-weight: bold; }
-    .locations-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; background: #2a2a2a; padding: 15px; border-radius: 8px; border: 1px solid #555; }
-    .loc-item { display: flex; flex-direction: column; }
-    .loc-item label { color: #fff; margin-bottom: 3px; font-size: 12px; }
-    
-    .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-    button { padding: 12px; font-size: 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; }
-    button:hover { opacity: 0.9; transform: translateY(-2px); }
-    .image-btn { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; font-size: 16px; }
-    .save-btn { background-color: #4CAF50; color: white; }
-    .export-btn { background-color: #2196F3; color: white; }
-    .import-btn { background-color: #9c27b0; color: white; }
-
-    .map-container { flex: 1.5; min-width: 400px; display: flex; justify-content: center; }
-    .map-wrapper { position: relative; width: 100%; border: 3px solid #555; border-radius: 8px; background-color: #000; display: inline-block; overflow: hidden; }
-    .map-bg { width: 100%; height: auto; display: block; user-select: none; }
-    
-    .map-node {
-        position: absolute; 
-        width: 10%; 
-        aspect-ratio: 1 / 1; 
-        min-width: 45px;
-        transform: translate(-50%, -50%); 
-        background-color: rgba(0, 0, 0, 0.4);
-        border: 2px solid #fff; border-radius: 10px; 
-        display: flex; align-items: center; justify-content: center;
-        background-size: contain; 
-        background-repeat: no-repeat; background-position: center; cursor: pointer;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    :root {
+        --bg: #1e1e24;
+        --panel: #2a2a32;
+        --panel-2: #34343e;
+        --line: #44444f;
+        --text: #f0f0f3;
+        --muted: #a0a0ad;
+        --accent: #ff9800;
+        --accent-d: #f57c00;
+        --green: #43a047;
+        --radius: 12px;
     }
-    .node-label { position: absolute; bottom: -22px; font-size: 14px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000; pointer-events: none; }
-    
-    .history-panel { background: #3d3d3d; padding: 20px; border-radius: 8px; margin-top: 25px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 850px; font-size: 13px; color: #333; }
-    th, td { border: 1px solid #aaa; padding: 8px; text-align: center; background: #fff; }
-    th { background-color: #ffcc80; }
-    .delete-btn { background-color: #f44336; color: white; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; }
+    body {
+        font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+        background: var(--bg); color: var(--text);
+        padding: 16px; max-width: 1180px; margin: 0 auto;
+        line-height: 1.5;
+    }
+    header {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; margin-bottom: 18px;
+    }
+    h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: .02em; }
+    .gh-link {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--muted); text-decoration: none; font-size: 13px;
+        padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px;
+        transition: .15s; white-space: nowrap;
+    }
+    .gh-link:hover { color: var(--text); border-color: var(--muted); background: var(--panel-2); }
+    .gh-link svg { width: 18px; height: 18px; fill: currentColor; }
+
+    .layout { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+
+    .map-container { flex: 1.4 1 380px; }
+    .map-wrapper {
+        position: relative; width: 100%; border: 2px solid var(--line);
+        border-radius: var(--radius); background: #000; overflow: hidden;
+        line-height: 0;
+    }
+    .map-bg { width: 100%; height: auto; display: block; user-select: none; -webkit-user-drag: none; }
+    .map-node {
+        position: absolute; width: 10%; aspect-ratio: 1/1; min-width: 40px;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,.4); border: 2px solid #fff; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        background-size: contain; background-repeat: no-repeat; background-position: center;
+        cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.5);
+        transition: border-color .15s, transform .05s;
+    }
+    .map-node:active { transform: translate(-50%, -50%) scale(.92); }
+    .map-node.set { border-color: var(--accent); }
+    .node-label {
+        position: absolute; bottom: -20px; font-size: 13px; font-weight: 700; color: #fff;
+        text-shadow: 1px 1px 2px #000, -1px -1px 2px #000; pointer-events: none;
+    }
+    .map-hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 10px; }
+
+    .control-panel { flex: 1 1 320px; background: var(--panel); padding: 18px; border-radius: var(--radius); }
+    .field { margin-bottom: 16px; }
+    label { display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: var(--accent); }
+    select, input[type="date"] {
+        padding: 10px; font-size: 15px; width: 100%; border-radius: 8px;
+        border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+        font-weight: 600; -webkit-appearance: none; appearance: none;
+    }
+    select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%23a0a0ad' d='M2 4l4 4 4-4z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+    .locations-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        background: var(--panel-2); padding: 14px; border-radius: 10px; margin-bottom: 16px;
+    }
+    .loc-item label { color: var(--text); font-size: 12px; }
+
+    .btn-group { display: flex; flex-direction: column; gap: 10px; }
+    button {
+        padding: 13px; font-size: 15px; border: none; border-radius: 9px; cursor: pointer;
+        font-weight: 700; transition: .15s; color: #fff;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    button:active { transform: translateY(1px); }
+    .copy-btn { background: linear-gradient(135deg, var(--accent), var(--accent-d)); font-size: 16px; }
+    .copy-btn:hover { filter: brightness(1.08); }
+    .save-btn { background: var(--green); }
+    .save-btn:hover { filter: brightness(1.1); }
+    .reset-btn { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    .reset-btn:hover { color: var(--text); border-color: var(--muted); }
+    .divider { height: 1px; background: var(--line); margin: 16px 0; border: 0; }
+
+    .toast {
+        position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+        background: #333; color: #fff; padding: 12px 22px; border-radius: 999px;
+        font-size: 14px; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.4);
+        opacity: 0; pointer-events: none; transition: .25s; z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: #c62828; }
+
+    @media (max-width: 760px) {
+        body { padding: 12px; }
+        h1 { font-size: 16px; }
+        .gh-link span { display: none; }
+        .gh-link { padding: 8px; }
+        .layout { gap: 16px; }
+        .control-panel { padding: 14px; }
+        .node-label { font-size: 11px; bottom: -18px; }
+    }
 </style>
 </head>
 <body>
 
-<h1>古王国パズル記録ツール v15 (座標完成版)</h1>
+<header>
+    <h1>古王国パズル記録ツール</h1>
+    <a class="gh-link" href="https://github.com/kazaminosuke/SoulSteel_OldKingdom_Puzzle" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        <span>GitHub</span>
+    </a>
+</header>
 
-<div class="main-container">
-    <div class="control-panel">
-        <div class="input-row">
-            <div class="input-group"><label>日付:</label><input type="date" id="record-date"></div>
-            <div class="input-group"><label>Boss位置 (背景切替):</label>
-                <select id="boss-loc" onchange="changeBackground()"><option value="不明">-</option><option value="E">E. 廃墟の街</option><option value="G">G. 廃墟の庭園</option><option value="I">I. 採石場</option><option value="J">J. 盗賊</option></select>
-            </div>
-        </div>
-        <div class="locations-grid">
-            <div class="loc-item"><label>A ベース</label><select id="locA" onchange="syncToMap('A')"><option value="-">-</option><option value="赤">赤</option><option value="黄">黄</option><option value="緑">緑</option><option value="青">青</option></select></div>
-            <div class="loc-item"><label>B 井戸</label><select id="locB" onchange="syncToMap('B')"><option value="-">-</option><option value="赤">赤</option><option value="黄">黄</option><option value="緑">緑</option><option value="青">青</option></select></div>
-            <div class="loc-item"><label>C スフィンクス</label><select id="locC" onchange="syncToMap('C')"><option value="-">-</option><option value="赤">赤</option><option value="黄">黄</option><option value="緑">緑</option><option value="青">青</option></select></div>
-            <div class="loc-item"><label>D セムカリス</label><select id="locD" onchange="syncToMap('D')"><option value="-">-</option><option value="赤">赤</option><option value="黄">黄</option><option value="緑">緑</option><option value="青">青</option></select></div>
-            <div class="loc-item"><label>E 廃墟の街</label><select id="locE" onchange="syncToMap('E')"><option value="-">-</option><option value="赤">赤</option><option value="黄">黄</option><option value="緑">緑</option><option value="青">青</option></select></div>
-            <div class="loc-item"><label>H 要塞</label><select id="locH" onchange="syncToMap('H')"><option value="-">-</option><option value="赤">赤</option><option value="黄">黄</option><option value="緑">緑</option><option value="青">青</option></select></div>
-            <div class="loc-item"><label>I 採石場</label><select id="locI" onchange="syncToMap('I')"><option value="-">-</option><option value="赤">赤</option><option value="黄">黄</option><option value="緑">緑</option><option value="青">青</option></select></div>
-            <div class="loc-item"><label>J 盗賊</label><select id="locJ" onchange="syncToMap('J')"><option value="-">-</option><option value="赤">赤</option><option value="黄">黄</option><option value="緑">緑</option><option value="青">青</option></select></div>
-        </div>
-        
-        <div class="btn-group">
-            <button class="image-btn" onclick="exportHighQualityImage()">📸 超高画質で画像を保存</button>
-            <button class="save-btn" onclick="saveData()">💾 データを表に保存する</button>
-        </div>
-        
-        <div class="btn-group" style="margin-top:20px; border-top:1px solid #555; padding-top:15px;">
-            <button class="export-btn" onclick="exportToCSV()">CSVを書き出す</button>
-            <button class="import-btn" onclick="document.getElementById('csvFile').click()">CSVを読み込む</button>
-            <input type="file" id="csvFile" style="display:none" accept=".csv" onchange="importCSV(this)">
-        </div>
-    </div>
-    
+<div class="layout">
     <div class="map-container">
         <div class="map-wrapper" id="capture-area">
-            <img src="map_none.webp" id="main-bg" class="map-bg">
-            <div class="map-node" style="top: 86%; left: 50%;" id="nodeA" onclick="cycleLoc('A')"><span class="node-label">A</span></div>
-            <div class="map-node" style="top: 65%; left: 50%;" id="nodeB" onclick="cycleLoc('B')"><span class="node-label">B</span></div>
-            <div class="map-node" style="top: 80%; left: 64%;" id="nodeC" onclick="cycleLoc('C')"><span class="node-label">C</span></div>
-            <div class="map-node" style="top: 60%; left: 68%;" id="nodeD" onclick="cycleLoc('D')"><span class="node-label">D</span></div>
-            <div class="map-node" style="top: 45%; left: 28%;" id="nodeE" onclick="cycleLoc('E')"><span class="node-label">E</span></div>
-            <div class="map-node" style="top: 45%; left: 50%;" id="nodeH" onclick="cycleLoc('H')"><span class="node-label">H</span></div>
-            <div class="map-node" style="top: 17%; left: 50%;" id="nodeI" onclick="cycleLoc('I')"><span class="node-label">I</span></div>
-            <div class="map-node" style="top: 80%; left: 36%;" id="nodeJ" onclick="cycleLoc('J')"><span class="node-label">J</span></div>
+            <img src="map_none.webp" id="main-bg" class="map-bg" alt="マップ">
+            <div class="map-node" style="top:86%;left:50%" id="nodeA" onclick="cycleLoc('A')"><span class="node-label">A</span></div>
+            <div class="map-node" style="top:65%;left:50%" id="nodeB" onclick="cycleLoc('B')"><span class="node-label">B</span></div>
+            <div class="map-node" style="top:80%;left:64%" id="nodeC" onclick="cycleLoc('C')"><span class="node-label">C</span></div>
+            <div class="map-node" style="top:60%;left:68%" id="nodeD" onclick="cycleLoc('D')"><span class="node-label">D</span></div>
+            <div class="map-node" style="top:45%;left:28%" id="nodeE" onclick="cycleLoc('E')"><span class="node-label">E</span></div>
+            <div class="map-node" style="top:45%;left:50%" id="nodeH" onclick="cycleLoc('H')"><span class="node-label">H</span></div>
+            <div class="map-node" style="top:17%;left:50%" id="nodeI" onclick="cycleLoc('I')"><span class="node-label">I</span></div>
+            <div class="map-node" style="top:80%;left:36%" id="nodeJ" onclick="cycleLoc('J')"><span class="node-label">J</span></div>
+        </div>
+        <p class="map-hint">マップ上のマーカーをタップで色を切り替えられます</p>
+    </div>
+
+    <div class="control-panel">
+        <div class="field">
+            <label>Boss位置（背景切替）</label>
+            <select id="boss-loc" onchange="changeBackground()">
+                <option value="不明">- 不明 -</option>
+                <option value="E">E. 廃墟の街</option>
+                <option value="G">G. 廃墟の庭園</option>
+                <option value="I">I. 採石場</option>
+                <option value="J">J. 盗賊</option>
+            </select>
+        </div>
+
+        <div class="locations-grid">
+            <div class="loc-item"><label>A ベース</label><select id="locA" onchange="syncToMap('A')"></select></div>
+            <div class="loc-item"><label>B 井戸</label><select id="locB" onchange="syncToMap('B')"></select></div>
+            <div class="loc-item"><label>C スフィンクス</label><select id="locC" onchange="syncToMap('C')"></select></div>
+            <div class="loc-item"><label>D セムカリス</label><select id="locD" onchange="syncToMap('D')"></select></div>
+            <div class="loc-item"><label>E 廃墟の街</label><select id="locE" onchange="syncToMap('E')"></select></div>
+            <div class="loc-item"><label>H 要塞</label><select id="locH" onchange="syncToMap('H')"></select></div>
+            <div class="loc-item"><label>I 採石場</label><select id="locI" onchange="syncToMap('I')"></select></div>
+            <div class="loc-item"><label>J 盗賊</label><select id="locJ" onchange="syncToMap('J')"></select></div>
+        </div>
+
+        <div class="btn-group">
+            <button class="copy-btn" onclick="copyImage()">📋 画像をクリップボードにコピー</button>
+            <button class="save-btn" onclick="saveImage()">📸 画像を保存（ダウンロード）</button>
+        </div>
+        <hr class="divider">
+        <div class="btn-group">
+            <button class="reset-btn" onclick="resetAll()">↺ マーカーをすべてリセット</button>
         </div>
     </div>
 </div>
 
-<div class="history-panel"><h3>記録履歴</h3><table id="h-table"><thead><tr><th>日付</th><th>ボス</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th><th>I</th><th>J</th><th>操作</th></tr></thead><tbody id="history-body"></tbody></table></div>
+<div class="toast" id="toast"></div>
 
 <script>
-    document.getElementById('record-date').valueAsDate = new Date();
+    const LOCS = ['A','B','C','D','E','H','I','J'];
     const patterns = ['-', '赤', '黄', '緑', '青'];
-    const imgs = { '赤': '鳥.png', '黄': 'カブトムシ.png', '緑': '蛇.png', '青': '猫.png' };
-    const bgImages = { 'E': 'map_E.webp', 'G': 'map_G.webp', 'I': 'map_I.webp', 'J': 'map_J.webp', '不明': 'map_none.webp' };
+    const imgs = { '赤':'鳥.png', '黄':'カブトムシ.png', '緑':'蛇.png', '青':'猫.png' };
+    const bgImages = { 'E':'map_E.webp', 'G':'map_G.webp', 'I':'map_I.webp', 'J':'map_J.webp', '不明':'map_none.webp' };
+
+    // セレクトの選択肢を生成（HTML軽量化）
+    LOCS.forEach(loc => {
+        document.getElementById('loc' + loc).innerHTML =
+            patterns.map(p => `<option value="${p}">${p}</option>`).join('');
+    });
 
     function changeBackground() {
         document.getElementById('main-bg').src = bgImages[document.getElementById('boss-loc').value] || 'map_none.webp';
     }
     function syncToMap(loc) {
         const val = document.getElementById('loc' + loc).value;
-        document.getElementById('node' + loc).style.backgroundImage = (val === '-') ? 'none' : `url('${imgs[val]}')`;
+        const node = document.getElementById('node' + loc);
+        node.style.backgroundImage = (val === '-') ? 'none' : `url('${imgs[val]}')`;
+        node.classList.toggle('set', val !== '-');
     }
     function cycleLoc(loc) {
-        const select = document.getElementById('loc' + loc);
-        select.value = patterns[(patterns.indexOf(select.value) + 1) % patterns.length];
+        const sel = document.getElementById('loc' + loc);
+        sel.value = patterns[(patterns.indexOf(sel.value) + 1) % patterns.length];
         syncToMap(loc);
     }
-
-    async function exportHighQualityImage() {
-        const dateStr = document.getElementById('record-date').value;
-        const bgImg = await loadImage(document.getElementById('main-bg').src);
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = bgImg.width;
-        canvas.height = bgImg.height;
-        const ctx = canvas.getContext('2d');
-        
-        ctx.drawImage(bgImg, 0, 0);
-
-        const locations = ['A', 'B', 'C', 'D', 'E', 'H', 'I', 'J'];
-        for (let loc of locations) {
-            const val = document.getElementById('loc' + loc).value;
-            if (val !== '-') {
-                const node = document.getElementById('node' + loc);
-                const topPercent = parseFloat(node.style.top) / 100;
-                const leftPercent = parseFloat(node.style.left) / 100;
-                
-                const boxSize = Math.min(canvas.width, canvas.height) * 0.12;
-                const boxX = (canvas.width * leftPercent) - (boxSize / 2);
-                const boxY = (canvas.height * topPercent) - (boxSize / 2);
-
-                const iconImg = await loadImage(imgs[val]);
-                
-                const ratio = Math.min(boxSize / iconImg.width, boxSize / iconImg.height);
-                const drawWidth = iconImg.width * ratio;
-                const drawHeight = iconImg.height * ratio;
-                
-                const drawX = boxX + (boxSize - drawWidth) / 2;
-                const drawY = boxY + (boxSize - drawHeight) / 2;
-
-                ctx.drawImage(iconImg, drawX, drawY, drawWidth, drawHeight);
-            }
-        }
-        const link = document.createElement('a');
-        link.download = `soulsteel_${dateStr}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+    function resetAll() {
+        LOCS.forEach(loc => { document.getElementById('loc' + loc).value = '-'; syncToMap(loc); });
+        showToast('リセットしました');
     }
 
     function loadImage(src) {
         return new Promise((resolve, reject) => {
-            const img = new Image(); img.onload = () => resolve(img); img.onerror = reject; img.src = src;
+            const img = new Image();
+            img.onload = () => resolve(img); img.onerror = reject; img.src = src;
         });
     }
 
-    function saveData() {
-        const date = document.getElementById('record-date').value;
-        let data = JSON.parse(localStorage.getItem('puzzleV8')) || [];
-        const oldIdx = data.findIndex(d => d.date === date);
-        if (oldIdx >= 0) { if(!confirm(date + " のデータは既に存在します。上書きしてもよろしいですか？")) return; } 
-        else { if(!confirm("この内容で保存しますか？")) return; }
-        const rec = { date, boss: document.getElementById('boss-loc').value, A: document.getElementById('locA').value, B: document.getElementById('locB').value, C: document.getElementById('locC').value, D: document.getElementById('locD').value, E: document.getElementById('locE').value, H: document.getElementById('locH').value, I: document.getElementById('locI').value, J: document.getElementById('locJ').value };
-        if (oldIdx >= 0) data[oldIdx] = rec; else data.push(rec);
-        data.sort((a, b) => new Date(b.date) - new Date(a.date));
-        localStorage.setItem('puzzleV8', JSON.stringify(data));
-        render(); alert("保存しました");
+    // 背景＋マーカーを合成したcanvasを生成
+    async function buildCanvas() {
+        const bgImg = await loadImage(document.getElementById('main-bg').src);
+        const canvas = document.createElement('canvas');
+        canvas.width = bgImg.width; canvas.height = bgImg.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(bgImg, 0, 0);
+
+        for (const loc of LOCS) {
+            const val = document.getElementById('loc' + loc).value;
+            if (val === '-') continue;
+            const node = document.getElementById('node' + loc);
+            const top = parseFloat(node.style.top) / 100;
+            const left = parseFloat(node.style.left) / 100;
+            const boxSize = Math.min(canvas.width, canvas.height) * 0.12;
+            const boxX = canvas.width * left - boxSize / 2;
+            const boxY = canvas.height * top - boxSize / 2;
+            const icon = await loadImage(imgs[val]);
+            const ratio = Math.min(boxSize / icon.width, boxSize / icon.height);
+            const w = icon.width * ratio, h = icon.height * ratio;
+            ctx.drawImage(icon, boxX + (boxSize - w) / 2, boxY + (boxSize - h) / 2, w, h);
+        }
+        return canvas;
     }
-    function render() {
-        const data = JSON.parse(localStorage.getItem('puzzleV8')) || [];
-        document.getElementById('history-body').innerHTML = data.map((r, i) => `<tr><td>${r.date}</td><td style="background:#ffe0b2">${r.boss}</td>${['A','B','C','D','E'].map(l=>`<td>${r[l]}</td>`).join('')}<td style="background:#eee">-</td><td style="background:#eee">-</td>${['H','I','J'].map(l=>`<td>${r[l]}</td>`).join('')}<td><button class="delete-btn" onclick="del(${i})">削除</button></td></tr>`).join('');
+
+    function canvasToBlob(canvas) {
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     }
-    function del(i) { if(confirm("本当に削除しますか？")) { let d = JSON.parse(localStorage.getItem('puzzleV8')); d.splice(i,1); localStorage.setItem('puzzleV8', JSON.stringify(d)); render(); } }
-    function exportToCSV() {
-        const data = JSON.parse(localStorage.getItem('puzzleV8')) || [];
-        if (data.length === 0) { alert("データがありません"); return; }
-        let csv = "日付,ボス,A,B,C,D,E,F,G,H,I,J\n"; data.forEach(r => { csv += `${r.date},${r.boss},${r.A},${r.B},${r.C},${r.D},${r.E},-,-,${r.H},${r.I},${r.J}\n`; });
-        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `soulsteel_log.csv`; link.click();
+
+    async function copyImage() {
+        try {
+            if (!navigator.clipboard || !window.ClipboardItem) {
+                showToast('お使いの環境はコピー非対応です。保存をご利用ください', true);
+                return;
+            }
+            // Safari対策: ClipboardItemにPromiseを渡す
+            const item = new ClipboardItem({ 'image/png': buildCanvas().then(canvasToBlob) });
+            await navigator.clipboard.write([item]);
+            showToast('画像をコピーしました');
+        } catch (e) {
+            try {
+                const blob = await canvasToBlob(await buildCanvas());
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                showToast('画像をコピーしました');
+            } catch (err) {
+                showToast('コピーに失敗しました。保存をご利用ください', true);
+            }
+        }
     }
-    function importCSV(input) {
-        const file = input.files[0]; if (!file) return;
-        const reader = new FileReader(); reader.onload = function(e) {
-            const lines = e.target.result.split(/\r\n|\n/); let newData = [];
-            for (let i = 1; i < lines.length; i++) { const cols = lines[i].split(','); if (cols.length < 12) continue; newData.push({ date: cols[0], boss: cols[1], A: cols[2], B: cols[3], C: cols[4], D: cols[5], E: cols[6], H: cols[9], I: cols[10], J: cols[11] }); }
-            if(confirm(newData.length + "件を読み込みますか？")) { let current = JSON.parse(localStorage.getItem('puzzleV8')) || []; newData.forEach(n => { const idx = current.findIndex(c => c.date === n.date); if(idx >= 0) current[idx] = n; else current.push(n); }); current.sort((a, b) => new Date(b.date) - new Date(a.date)); localStorage.setItem('puzzleV8', JSON.stringify(current)); render(); alert("完了！"); } input.value = "";
-        }; reader.readAsText(file);
+
+    async function saveImage() {
+        const canvas = await buildCanvas();
+        const d = new Date();
+        const ymd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const link = document.createElement('a');
+        link.download = `soulsteel_${ymd}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('画像を保存しました');
     }
-    window.onload = render;
+
+    let toastTimer;
+    function showToast(msg, isError) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.toggle('error', !!isError);
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
 </script>
 </body>
 </html>
