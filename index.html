@@ -57,6 +57,7 @@
         background-size: contain; background-repeat: no-repeat; background-position: center;
         cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.5);
         transition: border-color .15s, transform .05s;
+        user-select: none; -webkit-user-select: none;
     }
     .map-node:active { transform: translate(-50%, -50%) scale(.92); }
     .map-node.set { border-color: var(--accent); }
@@ -120,6 +121,8 @@
     .copy-btn:hover { filter: brightness(1.08); }
     .save-btn { background: var(--green); }
     .save-btn:hover { filter: brightness(1.1); }
+    .import-btn { background: #5c6bc0; }
+    .import-btn:hover { filter: brightness(1.1); }
     .reset-btn { background: transparent; color: var(--muted); border: 1px solid var(--line); }
     .reset-btn:hover { color: var(--text); border-color: var(--muted); }
     .divider { height: 1px; background: var(--line); margin: 16px 0; border: 0; }
@@ -200,6 +203,8 @@
         </div>
         <hr class="divider">
         <div class="btn-group">
+            <button class="import-btn" onclick="document.getElementById('img-file').click()">🖼️ 画像から復元</button>
+            <input type="file" id="img-file" accept="image/png" style="display:none" onchange="importImage(this)">
             <button class="reset-btn" onclick="resetAll()">↺ マーカーをすべてリセット</button>
         </div>
     </div>
@@ -243,24 +248,32 @@
     // ---- 状態の保存・復元（リロード対策） ----
     const STORE_KEY = 'soulsteel_state_v1';
     let ready = false; // 復元完了までは保存しない
+
+    // 現在の盤面状態をオブジェクトとして取得
+    function getState() {
+        const s = { boss: currentBoss, link: document.getElementById('link-toggle').checked, locs: {} };
+        LOCS.forEach(l => s.locs[l] = document.getElementById('loc' + l).value);
+        return s;
+    }
+    // 状態オブジェクトを盤面に反映
+    function applyState(state) {
+        if (!state) return;
+        document.getElementById('link-toggle').checked = state.link !== false;
+        if (state.locs) LOCS.forEach(l => {
+            document.getElementById('loc' + l).value = patterns.includes(state.locs[l]) ? state.locs[l] : '-';
+        });
+        LOCS.forEach(l => syncToMap(l)); // ノード反映（連動ONならAからボスが決まる）
+        // 連動OFFのときは保存済みのボス位置を復元
+        if (state.boss && !document.getElementById('link-toggle').checked) setBoss(state.boss);
+    }
     function saveState() {
         if (!ready) return;
-        const state = { boss: currentBoss, link: document.getElementById('link-toggle').checked, locs: {} };
-        LOCS.forEach(l => state.locs[l] = document.getElementById('loc' + l).value);
-        try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(getState())); } catch (e) {}
     }
     function loadState() {
         let state = null;
         try { state = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) {}
-        if (state) {
-            document.getElementById('link-toggle').checked = state.link !== false;
-            if (state.locs) LOCS.forEach(l => {
-                if (patterns.includes(state.locs[l])) document.getElementById('loc' + l).value = state.locs[l];
-            });
-        }
-        LOCS.forEach(l => syncToMap(l)); // ノード反映（連動ONならAからボスが決まる）
-        // 連動OFFのときは保存済みのボス位置を復元
-        if (state && state.boss && !document.getElementById('link-toggle').checked) setBoss(state.boss);
+        applyState(state);
         ready = true;
     }
 
@@ -328,6 +341,57 @@
         return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     }
 
+    // ---- PNGメタデータ（tEXtチャンク）で状態を画像に埋め込む ----
+    const PNG_KEY = 'soulsteel';
+    function crc32(bytes) {
+        let t = crc32.t;
+        if (!t) { t = crc32.t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } }
+        let crc = 0xFFFFFFFF;
+        for (let i = 0; i < bytes.length; i++) crc = t[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+    function addPngText(png, keyword, text) {
+        const enc = new TextEncoder();
+        const kw = enc.encode(keyword), txt = enc.encode(text), type = enc.encode('tEXt');
+        const data = new Uint8Array(kw.length + 1 + txt.length);
+        data.set(kw, 0); data[kw.length] = 0; data.set(txt, kw.length + 1);
+        const chunk = new Uint8Array(12 + data.length);
+        const dv = new DataView(chunk.buffer);
+        dv.setUint32(0, data.length);
+        chunk.set(type, 4); chunk.set(data, 8);
+        const crcIn = new Uint8Array(4 + data.length); crcIn.set(type, 0); crcIn.set(data, 4);
+        dv.setUint32(8 + data.length, crc32(crcIn));
+        // IEND（末尾12バイト）の直前に挿入
+        const pos = png.length - 12;
+        const out = new Uint8Array(png.length + chunk.length);
+        out.set(png.subarray(0, pos), 0); out.set(chunk, pos); out.set(png.subarray(pos), pos + chunk.length);
+        return out;
+    }
+    function readPngText(png, keyword) {
+        const dv = new DataView(png.buffer, png.byteOffset, png.byteLength);
+        const dec = new TextDecoder();
+        let pos = 8;
+        while (pos + 8 <= png.length) {
+            const len = dv.getUint32(pos);
+            const type = dec.decode(png.subarray(pos + 4, pos + 8));
+            if (type === 'tEXt') {
+                const d = png.subarray(pos + 8, pos + 8 + len);
+                const nul = d.indexOf(0);
+                if (nul >= 0 && dec.decode(d.subarray(0, nul)) === keyword) return dec.decode(d.subarray(nul + 1));
+            }
+            if (type === 'IEND') break;
+            pos += 12 + len;
+        }
+        return null;
+    }
+    // 状態を埋め込んだPNGバイト列を生成
+    async function buildPngBytes() {
+        const png = new Uint8Array(await (await canvasToBlob(await buildCanvas())).arrayBuffer());
+        return addPngText(png, PNG_KEY, JSON.stringify(getState()));
+    }
+
+    const pngBlob = async () => new Blob([await buildPngBytes()], { type: 'image/png' });
+
     async function copyImage() {
         try {
             if (!navigator.clipboard || !window.ClipboardItem) {
@@ -335,13 +399,11 @@
                 return;
             }
             // Safari対策: ClipboardItemにPromiseを渡す
-            const item = new ClipboardItem({ 'image/png': buildCanvas().then(canvasToBlob) });
-            await navigator.clipboard.write([item]);
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob() })]);
             showToast('画像をコピーしました');
         } catch (e) {
             try {
-                const blob = await canvasToBlob(await buildCanvas());
-                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': await pngBlob() })]);
                 showToast('画像をコピーしました');
             } catch (err) {
                 showToast('コピーに失敗しました。保存をご利用ください', true);
@@ -350,14 +412,33 @@
     }
 
     async function saveImage() {
-        const canvas = await buildCanvas();
+        const blob = await pngBlob();
         const d = new Date();
         const ymd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = `soulsteel_${ymd}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.href = url;
         link.click();
+        URL.revokeObjectURL(url);
         showToast('画像を保存しました');
+    }
+
+    // 保存した画像（メタデータ入り）を読み込んで盤面を復元
+    async function importImage(input) {
+        const file = input.files[0];
+        input.value = '';
+        if (!file) return;
+        try {
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            const text = readPngText(bytes, PNG_KEY);
+            if (!text) { showToast('この画像に記録データが見つかりません', true); return; }
+            applyState(JSON.parse(text));
+            saveState();
+            showToast('画像から復元しました');
+        } catch (e) {
+            showToast('復元に失敗しました', true);
+        }
     }
 
     let toastTimer;
