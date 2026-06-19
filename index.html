@@ -175,7 +175,7 @@
             <div class="field-head">
                 <label>Boss位置（背景切替）</label>
                 <label class="switch" title="ベースの色からボス位置を自動判定">
-                    <input type="checkbox" id="link-toggle" checked onchange="onAChange()">
+                    <input type="checkbox" id="link-toggle" checked onchange="onAChange(); saveState();">
                     <span class="switch-track"></span>
                     <span class="switch-text">ベース色と連動</span>
                 </label>
@@ -237,6 +237,31 @@
         document.getElementById('main-bg').src = bgImages[v] || 'map_none.webp';
         document.querySelectorAll('.boss-chip').forEach(c =>
             c.classList.toggle('active', c.dataset.v === v));
+        saveState();
+    }
+
+    // ---- 状態の保存・復元（リロード対策） ----
+    const STORE_KEY = 'soulsteel_state_v1';
+    let ready = false; // 復元完了までは保存しない
+    function saveState() {
+        if (!ready) return;
+        const state = { boss: currentBoss, link: document.getElementById('link-toggle').checked, locs: {} };
+        LOCS.forEach(l => state.locs[l] = document.getElementById('loc' + l).value);
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+    function loadState() {
+        let state = null;
+        try { state = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) {}
+        if (state) {
+            document.getElementById('link-toggle').checked = state.link !== false;
+            if (state.locs) LOCS.forEach(l => {
+                if (patterns.includes(state.locs[l])) document.getElementById('loc' + l).value = state.locs[l];
+            });
+        }
+        LOCS.forEach(l => syncToMap(l)); // ノード反映（連動ONならAからボスが決まる）
+        // 連動OFFのときは保存済みのボス位置を復元
+        if (state && state.boss && !document.getElementById('link-toggle').checked) setBoss(state.boss);
+        ready = true;
     }
 
     // ベース(A)の色 → レリックボス位置の対応
@@ -255,6 +280,7 @@
         node.style.backgroundImage = (val === '-') ? 'none' : `url('${imgs[val]}')`;
         node.classList.toggle('set', val !== '-');
         if (loc === 'A') onAChange();
+        saveState();
     }
     function cycleLoc(loc) {
         const sel = document.getElementById('loc' + loc);
@@ -343,6 +369,9 @@
         clearTimeout(toastTimer);
         toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
     }
+
+    // 起動時に前回の状態を復元
+    loadState();
 </script>
 </body>
 </html>
